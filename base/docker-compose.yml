@@ -1,21 +1,21 @@
-#Services front/back/db
+#Services front/back/db/livekit
 services:
   frontend:
-    image: ghcr.io/${GITHUB}/karaoke-frontend:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GITHUB_ORG}/karaoke-frontend:${IMAGE_TAG:-latest}
     ports:
-      - "${PORT_FRONT:-80}:80"
+      - "${PORT_FRONTEND:-80}:80"
     environment:
-      - API_URL=http://backend:${PORT_BACK:-3000}
+      - API_URL=http://backend:${PORT_BACKEND:-3000}
     depends_on:
       - backend
 
   backend:
-    image: ghcr.io/${GITHUB}/karaoke-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GITHUB_ORG}/karaoke-backend:${IMAGE_TAG:-latest}
     ports:
-      - "${PORT_BACK:-3000}:3000"
+      - "${PORT_BACKEND:-3000}:3000"
     environment:
       - NODE_ENV=${APP_ENV}
-      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWD}@db:5432/${BD_NAME}
+      - DB_URL=${DB_URL}
       - MAX_ROOM_SIZE=${MAX_ROOM_SIZE}
       - SKIP_VOTE_THRESHOLD_PERCENT=${SKIP_VOTE_THRESHOLD_PERCENT}
     depends_on:
@@ -24,11 +24,20 @@ services:
   db:
     image: postgres:16
     environment:
-      - BD_NAME=${BD_NAME}
+      - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWD=${DB_PASSWD}
     volumes:
       - db_data:/var/lib/postgresql/data
 
+  livekit:
+    image: livekit/livekit-server:latest
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "50000-50100:50000-50100/udp"
+    environment:
+      - LIVEKIT_KEYS=${LIVEKIT_API_KEY}:${LIVEKIT_API_SECRET}
+    command: --dev
 volumes:
   db_data:
